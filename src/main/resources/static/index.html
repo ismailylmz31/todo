@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Todo App</title>
+    <style>
+        .completed {
+            text-decoration: line-through;
+        }
+    </style>
+</head>
+<body>
+<h1>Todo List</h1>
+<form id="todoForm">
+    <input type="text" id="todoInput" placeholder="Add new todo" required>
+    <button type="submit">Add Todo</button>
+</form>
+<ul id="todoList"></ul>
+
+<script>
+    document.getElementById('todoForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const title = document.getElementById('todoInput').value;
+        addTodo({ title, completed: false });
+    });
+
+    async function fetchTodos() {
+        const response = await fetch('/api/todos');
+        const todos = await response.json();
+        const list = document.getElementById('todoList');
+        list.innerHTML = '';
+        todos.forEach(todo => {
+            const item = document.createElement('li');
+            item.className = todo.completed ? 'completed' : '';
+            item.textContent = todo.title;
+            item.onclick = () => toggleCompleted(todo.id, !todo.completed);
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = (e) => {
+                e.stopPropagation();
+                deleteTodo(todo.id);
+            };
+            item.appendChild(deleteButton);
+            list.appendChild(item);
+        });
+    }
+
+    async function addTodo(todo) {
+        await fetch('/api/todos', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(todo)
+        });
+        fetchTodos();
+    }
+
+    async function toggleCompleted(id, completed) {
+        await fetch(`/api/todos/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ completed })
+        });
+        fetchTodos();
+    }
+
+    async function deleteTodo(id) {
+        await fetch(`/api/todos/${id}`, {
+            method: 'DELETE'
+        });
+        fetchTodos();
+    }
+
+    fetchTodos();
+</script>
+</body>
+</html>
